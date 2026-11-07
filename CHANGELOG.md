@@ -10,4 +10,4 @@
 - Added quick confirmed income/expense entry and honest empty/incomplete-data states.
 - Added core money, overflow, balancing and savings-rate unit tests.
 - Documented toolchain limits, accounting rules, security, recovery and phased delivery plan.
-
+- Added GitHub Actions CI for unit testing, debug APK creation and artifact retention.

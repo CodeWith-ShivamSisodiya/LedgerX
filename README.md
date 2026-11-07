@@ -35,6 +35,16 @@ gradle wrapper --gradle-version 8.9
 
 The debug APK will then be produced by Gradle at `app/build/outputs/apk/debug/app-debug.apk` only after a successful build.
 
+## GitHub Actions build
+
+The `Android build` workflow runs on pushes and pull requests targeting `main` or `master`, version tags matching `v*`, and manual dispatches. It installs JDK 17, Gradle 8.9, Android Platform 35 and Build Tools 35.0.0, then runs:
+
+```text
+testDebugUnitTest assembleDebug
+```
+
+Successful runs expose an installable `LedgerX-debug-<run number>` APK artifact. Test reports are uploaded even when the test/build step fails. The workflow deliberately creates a debug-signed development APK; production release signing must use protected GitHub secrets and a separately managed release key.
+
 ## Accounting conventions
 
 Amounts are stored as signed 64-bit integer minor units (paise for INR). A business transaction is authoritative only with at least two postings whose signed total is exactly zero. Arithmetic overflow is rejected.
@@ -53,4 +63,3 @@ Room foreign keys protect transaction/posting ownership. Audit rows are written 
 `SecureDatabaseKeyManager` creates 256 bits of random database key material. It encrypts that material with an Android Keystore AES-GCM key and stores only ciphertext and IV in private app preferences. Android system cloud backup and device transfer are disabled until the explicit encrypted recovery workflow exists.
 
 Release signing keys must never be committed. For production, create and protect a dedicated upload key outside the repository, configure signing through local/CI secrets, enable shrinking after validation, and retain the Play App Signing recovery records.
-
