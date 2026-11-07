@@ -1,4 +1,4 @@
-package in.ledgerx.app.core.database
+package com.ledgerx.app.core.database
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -92,4 +92,3 @@ data class TransactionRow(
     val occurredAtEpochMillis: Long,
     val accountName: String?,
 )
-

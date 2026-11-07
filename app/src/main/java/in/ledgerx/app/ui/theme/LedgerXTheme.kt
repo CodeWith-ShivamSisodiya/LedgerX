@@ -1,4 +1,4 @@
-package in.ledgerx.app.ui.theme
+package com.ledgerx.app.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -40,4 +40,3 @@ fun LedgerXTheme(content: @Composable () -> Unit) {
         content = content,
     )
 }
-

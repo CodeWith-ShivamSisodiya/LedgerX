@@ -1,4 +1,4 @@
-package in.ledgerx.app.core.model
+package com.ledgerx.app.core.model
 
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -30,4 +30,3 @@ data class Money(val minor: Long, val currencyCode: String = "INR") {
         }
     }
 }
-

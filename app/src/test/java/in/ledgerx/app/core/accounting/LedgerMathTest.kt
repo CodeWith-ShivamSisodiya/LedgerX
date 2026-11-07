@@ -1,4 +1,4 @@
-package in.ledgerx.app.core.accounting
+package com.ledgerx.app.core.accounting
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -26,4 +26,3 @@ class LedgerMathTest {
         assertNull(LedgerMath.savingsRateBasisPoints(0L, 10_00L))
     }
 }
-

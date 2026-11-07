@@ -1,4 +1,4 @@
-package in.ledgerx.app.di
+package com.ledgerx.app.di
 
 import android.content.Context
 import androidx.room.Room
@@ -7,9 +7,9 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import in.ledgerx.app.core.database.LedgerDao
-import in.ledgerx.app.core.database.LedgerXDatabase
-import in.ledgerx.app.core.security.SecureDatabaseKeyManager
+import com.ledgerx.app.core.database.LedgerDao
+import com.ledgerx.app.core.database.LedgerXDatabase
+import com.ledgerx.app.core.security.SecureDatabaseKeyManager
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import javax.inject.Singleton
 
@@ -31,4 +31,3 @@ object AppModule {
 
     @Provides fun ledgerDao(database: LedgerXDatabase): LedgerDao = database.ledgerDao()
 }
-

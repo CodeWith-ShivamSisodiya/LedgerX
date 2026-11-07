@@ -1,4 +1,4 @@
-package in.ledgerx.app.core.accounting
+package com.ledgerx.app.core.accounting
 
 object LedgerMath {
     fun requireBalanced(signedMinorAmounts: List<Long>) {

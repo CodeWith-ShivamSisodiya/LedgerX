@@ -1,4 +1,4 @@
-package in.ledgerx.app
+package com.ledgerx.app
 
 import android.os.Bundle
 import android.view.WindowManager
@@ -10,9 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
-import in.ledgerx.app.ui.LedgerXApp
-import in.ledgerx.app.ui.LedgerXViewModel
-import in.ledgerx.app.ui.theme.LedgerXTheme
+import com.ledgerx.app.ui.LedgerXApp
+import com.ledgerx.app.ui.LedgerXViewModel
+import com.ledgerx.app.ui.theme.LedgerXTheme
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

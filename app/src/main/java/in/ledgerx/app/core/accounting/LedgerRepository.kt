@@ -1,16 +1,16 @@
-package in.ledgerx.app.core.accounting
+package com.ledgerx.app.core.accounting
 
 import androidx.room.withTransaction
-import in.ledgerx.app.core.database.AccountBalance
-import in.ledgerx.app.core.database.AccountEntity
-import in.ledgerx.app.core.database.AuditLogEntity
-import in.ledgerx.app.core.database.CategoryEntity
-import in.ledgerx.app.core.database.LedgerDao
-import in.ledgerx.app.core.database.LedgerPostingEntity
-import in.ledgerx.app.core.database.LedgerXDatabase
-import in.ledgerx.app.core.database.TransactionEntity
-import in.ledgerx.app.core.database.TransactionRow
-import in.ledgerx.app.core.model.Money
+import com.ledgerx.app.core.database.AccountBalance
+import com.ledgerx.app.core.database.AccountEntity
+import com.ledgerx.app.core.database.AuditLogEntity
+import com.ledgerx.app.core.database.CategoryEntity
+import com.ledgerx.app.core.database.LedgerDao
+import com.ledgerx.app.core.database.LedgerPostingEntity
+import com.ledgerx.app.core.database.LedgerXDatabase
+import com.ledgerx.app.core.database.TransactionEntity
+import com.ledgerx.app.core.database.TransactionRow
+import com.ledgerx.app.core.model.Money
 import kotlinx.coroutines.flow.Flow
 import java.time.Clock
 import java.util.UUID

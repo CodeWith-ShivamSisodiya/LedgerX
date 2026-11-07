@@ -1,4 +1,4 @@
-package in.ledgerx.app.core.database
+package com.ledgerx.app.core.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
@@ -17,4 +17,3 @@ import androidx.room.RoomDatabase
 abstract class LedgerXDatabase : RoomDatabase() {
     abstract fun ledgerDao(): LedgerDao
 }
-

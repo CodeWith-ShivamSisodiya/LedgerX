@@ -13,3 +13,4 @@
 - Added GitHub Actions CI for unit testing, debug APK creation and artifact retention.
 - Updated Android SDK setup to `setup-android@v4` without the removed legacy `tools` package.
 - Added the LedgerX logo as the adaptive launcher, round launcher, and onboarding brand asset.
+- Fixed Kotlin compilation by replacing the reserved-word package prefix `in.ledgerx.app` with `com.ledgerx.app` and enabled Room schema export.

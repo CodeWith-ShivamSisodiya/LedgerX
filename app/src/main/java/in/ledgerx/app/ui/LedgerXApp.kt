@@ -1,4 +1,4 @@
-package in.ledgerx.app.ui
+package com.ledgerx.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
@@ -66,11 +66,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import in.ledgerx.app.R
-import in.ledgerx.app.core.accounting.LedgerMath
-import in.ledgerx.app.core.database.AccountBalance
-import in.ledgerx.app.core.database.TransactionRow
-import in.ledgerx.app.core.model.Money
+import com.ledgerx.app.R
+import com.ledgerx.app.core.accounting.LedgerMath
+import com.ledgerx.app.core.database.AccountBalance
+import com.ledgerx.app.core.database.TransactionRow
+import com.ledgerx.app.core.model.Money
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter

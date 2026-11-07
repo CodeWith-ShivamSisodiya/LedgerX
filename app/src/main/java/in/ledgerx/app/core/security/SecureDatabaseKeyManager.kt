@@ -1,4 +1,4 @@
-package in.ledgerx.app.core.security
+package com.ledgerx.app.core.security
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec

@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "in.ledgerx.app"
+    namespace = "com.ledgerx.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "in.ledgerx.app"
+        applicationId = "com.ledgerx.app"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
@@ -28,6 +28,10 @@ android {
     kotlinOptions { jvmTarget = "17" }
 
     packaging.resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -55,4 +59,3 @@ dependencies {
 
     testImplementation(libs.junit)
 }
-

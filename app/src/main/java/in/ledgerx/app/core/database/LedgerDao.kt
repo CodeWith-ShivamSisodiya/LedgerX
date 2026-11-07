@@ -1,4 +1,4 @@
-package in.ledgerx.app.core.database
+package com.ledgerx.app.core.database
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -56,4 +56,3 @@ interface LedgerDao {
     @Query("SELECT COALESCE(SUM(signedMinor), 0) FROM ledger_postings WHERE transactionId = :transactionId")
     suspend fun postingSum(transactionId: String): Long
 }
-

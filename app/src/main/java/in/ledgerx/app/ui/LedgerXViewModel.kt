@@ -1,12 +1,12 @@
-package in.ledgerx.app.ui
+package com.ledgerx.app.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import in.ledgerx.app.core.accounting.LedgerRepository
-import in.ledgerx.app.core.database.AccountBalance
-import in.ledgerx.app.core.database.TransactionRow
-import in.ledgerx.app.core.model.Money
+import com.ledgerx.app.core.accounting.LedgerRepository
+import com.ledgerx.app.core.database.AccountBalance
+import com.ledgerx.app.core.database.TransactionRow
+import com.ledgerx.app.core.model.Money
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -82,4 +82,3 @@ class LedgerXViewModel @Inject constructor(
         }
     }
 }
-

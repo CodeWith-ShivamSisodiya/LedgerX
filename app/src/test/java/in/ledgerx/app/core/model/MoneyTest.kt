@@ -1,4 +1,4 @@
-package in.ledgerx.app.core.model
+package com.ledgerx.app.core.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -19,4 +19,3 @@ class MoneyTest {
         Money(100, "INR") + Money(100, "USD")
     }
 }
-
