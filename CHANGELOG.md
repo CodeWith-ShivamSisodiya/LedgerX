@@ -11,3 +11,5 @@
 - Added core money, overflow, balancing and savings-rate unit tests.
 - Documented toolchain limits, accounting rules, security, recovery and phased delivery plan.
 - Added GitHub Actions CI for unit testing, debug APK creation and artifact retention.
+- Updated Android SDK setup to `setup-android@v4` without the removed legacy `tools` package.
+- Added the LedgerX logo as the adaptive launcher, round launcher, and onboarding brand asset.

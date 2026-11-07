@@ -1,6 +1,7 @@
 package in.ledgerx.app.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,12 +58,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import in.ledgerx.app.R
 import in.ledgerx.app.core.accounting.LedgerMath
 import in.ledgerx.app.core.database.AccountBalance
 import in.ledgerx.app.core.database.TransactionRow
@@ -112,10 +116,15 @@ private fun OnboardingScreen(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Box(
-                Modifier.size(52.dp).background(MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp)),
+                Modifier.size(88.dp).background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(24.dp)),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Lx", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Black)
+                Image(
+                    painter = painterResource(R.drawable.ledgerx_logo),
+                    contentDescription = "LedgerX logo",
+                    modifier = Modifier.size(76.dp),
+                    contentScale = ContentScale.Fit,
+                )
             }
             Text("LedgerX", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
             if (step == 0) {
@@ -462,4 +471,3 @@ private fun QuickEntrySheet(
         }
     }
 }
-
