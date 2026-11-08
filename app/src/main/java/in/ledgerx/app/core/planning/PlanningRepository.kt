@@ -79,7 +79,7 @@ class PlanningRepository @Inject constructor(
         val id = existing?.id ?: UUID.randomUUID().toString()
         dao.saveBill(BillEntity(id, name.trim(), existing?.merchant, amount.minor, amount.currencyCode, dueDate.toEpochDay(), frequency, "DUE", existing?.amountMinor?.takeIf { it != amount.minor }, 3))
         extendedDao.saveBillPrice(com.ledgerx.app.core.database.BillPriceHistoryEntity(UUID.randomUUID().toString(), id, amount.minor, LocalDate.now(clock).toEpochDay()))
-        id
+        return id
     }
     suspend fun markBillPaid(id: String) { require(dao.markBillPaid(id) == 1) { "Bill is already paid or no longer exists" } }
     suspend fun payBill(id: String, accountId: String, categoryId: String, date: LocalDate): String = database.withTransaction {
@@ -163,7 +163,7 @@ class PlanningRepository @Inject constructor(
         dao.saveLoan(loan.copy(annualRateBasisPoints=annualRateBasisPoints,emiMinor=schedule.emiMinor,nextDueEpochDay=effectiveDate.toEpochDay()))
         extendedDao.deleteLoanSchedule(loanId)
         extendedDao.saveLoanSchedule(schedule.payments.map { payment -> LoanScheduleEntity("$loanId:${payment.installment}",loanId,payment.installment,effectiveDate.plusMonths((payment.installment-1).toLong()).toEpochDay(),payment.openingMinor,payment.paymentMinor,payment.principalMinor,payment.interestMinor,payment.closingMinor,"DUE") })
-        dao.saveLoanEvent(LoanEventEntity(UUID.randomUUID().toString(),loanId,"RATE_CHANGE",0,0,0,annualRateBasisPoints,effectiveDate.toEpochDay(),null))
+        dao.saveLoanEvent(com.ledgerx.app.core.database.LoanEventEntity(UUID.randomUUID().toString(),loanId,"RATE_CHANGE",0,0,0,annualRateBasisPoints,effectiveDate.toEpochDay(),null))
     }
 
     suspend fun addPolicy(
