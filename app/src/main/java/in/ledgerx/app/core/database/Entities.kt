@@ -15,13 +15,14 @@ data class AccountEntity(
     val createdAtEpochMillis: Long,
 )
 
-@Entity(tableName = "categories", indices = [Index(value = ["name"], unique = true)])
+@Entity(tableName = "categories", indices = [Index(value = ["name"], unique = true), Index("parentCategoryId")])
 data class CategoryEntity(
     @PrimaryKey val id: String,
     val name: String,
     val kind: String,
     val icon: String,
     val userDefined: Boolean,
+    val parentCategoryId: String? = null,
 )
 
 @Entity(tableName = "transactions", indices = [Index("occurredAtEpochMillis"), Index("type")])
@@ -91,4 +92,11 @@ data class TransactionRow(
     val note: String?,
     val occurredAtEpochMillis: Long,
     val accountName: String?,
+    val origin: String,
+    val reconciliationStatus: String,
 )
+
+data class MonthlyTotals(val incomeMinor: Long, val expenseMinor: Long, val investmentMinor: Long)
+
+data class NamedAmount(val name: String, val amountMinor: Long)
+data class MonthlySpend(val month: String, val amountMinor: Long)

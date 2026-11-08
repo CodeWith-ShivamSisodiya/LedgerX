@@ -5,7 +5,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 
 private val DarkColors = darkColorScheme(
     primary = Color(0xFF55E6B5),
@@ -33,10 +36,13 @@ private val LightColors = lightColorScheme(
 )
 
 @Composable
-fun LedgerXTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors,
-        typography = MaterialTheme.typography,
-        content = content,
-    )
+fun LedgerXTheme(themeMode: String = "SYSTEM", textScale: Float = 1f, content: @Composable () -> Unit) {
+    val density = LocalDensity.current
+    CompositionLocalProvider(LocalDensity provides Density(density.density, density.fontScale * textScale)) {
+        MaterialTheme(
+            colorScheme = if (themeMode == "DARK" || (themeMode == "SYSTEM" && isSystemInDarkTheme())) DarkColors else LightColors,
+            typography = MaterialTheme.typography,
+            content = content,
+        )
+    }
 }

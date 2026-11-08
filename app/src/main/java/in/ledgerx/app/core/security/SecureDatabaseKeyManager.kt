@@ -42,6 +42,12 @@ class SecureDatabaseKeyManager @Inject constructor(
         return passphrase
     }
 
+    fun destroyKeyMaterial() {
+        check(preferences.edit().clear().commit()) { "Unable to remove wrapped database key material" }
+        val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        if (keyStore.containsAlias(KEY_ALIAS)) keyStore.deleteEntry(KEY_ALIAS)
+    }
+
     private fun decrypt(ciphertext: ByteArray, iv: ByteArray): ByteArray =
         Cipher.getInstance(TRANSFORMATION).run {
             init(Cipher.DECRYPT_MODE, getOrCreateWrappingKey(), GCMParameterSpec(128, iv))

@@ -18,4 +18,8 @@ class MoneyTest {
     fun rejectsCurrencyMismatch() {
         Money(100, "INR") + Money(100, "USD")
     }
+
+    @Test fun signedParserSupportsLiabilityStatements() {
+        assertEquals(-12_345L, Money.parseSignedMajor("-123.45").minor)
+    }
 }

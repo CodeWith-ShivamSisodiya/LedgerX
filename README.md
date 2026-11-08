@@ -2,20 +2,26 @@
 
 LedgerX is a native, offline-first Android personal finance application for Indian households. Financial records are stored locally in an encrypted SQLCipher database; the application manifest requests no internet permission.
 
-## Current implementation: Phase 1 foundation
+## Current implementation: six-phase release candidate
 
 - Native Kotlin, Jetpack Compose, Material 3, Hilt, Room, Coroutines and Flow.
 - Progressive privacy-first onboarding and first-account creation.
-- Savings, cash and credit-card accounts with exact paise balances.
+- Savings, current, cash, wallet and credit-card accounts with exact paise balances, rename/archive, transfers and reconciliation.
 - Double-entry-inspired postings with a zero-sum invariant checked before and after persistence.
 - Correct initial liability sign for credit-card balances.
-- Confirmed income and expense entry from the floating quick-entry action.
-- Dashboard, account balances, recent activity, evidence-limited insights, and honest health-score incompleteness.
+- Dated gross/take-home income, expenses, refunds, reimbursements, split expenses, reversible corrections, tags, encrypted receipt attachment counts/removal, merchant memory, recurring confirmation, bills and subscriptions.
+- Offline CSV/XLSX statement parsing with column mapping, validation preview, duplicate fingerprints, atomic rollback, and account reconciliation.
+- FIFO investment lots, purchases/sales/dividends/SIPs/corporate actions, dated valuations, realized/unrealized return and XIRR; FD/RD lock-ins; EPF/EPS/PPF/NPS history and retirement scenarios; physical assets/maintenance/debt links; insurance documents; variable-rate loans and credit-card statements.
+- Goals and non-inflating allocations, category/merchant/lifestyle/interest analytics, evidence-based savings findings, multi-horizon scenarios, consolidated financial/tax calendar, configurable local reminders, transparent health score history, and interactive accessible financial charts.
+- Versioned Tax Year 2026-27 old/new regime comparison, tax profile, plaintext transaction export, and CA working export with explicit scope warnings.
 - Database passphrase generated randomly, wrapped by an Android Keystore AES-GCM key, and never stored in plaintext.
 - Sensitive-window screenshot protection (`FLAG_SECURE`).
+- Optional biometric/device-credential app locking that resets whenever the activity leaves the foreground.
+- Password-encrypted, device-independent backup/restore with AES-256-GCM authentication and transactional verification.
+- Non-destructive Room migrations from the shipped v1 ledger through the v3 planning/security schema, with instrumented migration coverage.
 - No internet permission, analytics, ads, backend, or registration.
 
-This is an actively developed Phase 1 slice, not the completed multi-phase product described in the master brief. Transfers, editing/reversal, biometric unlock, backup/restore, imports, reconciliation, investments, loans, insurance, goals, forecasting, tax, calendar, and production hardening remain tracked work.
+Version `0.9.0` is intentionally marked as a release candidate until the expanded branch passes the GitHub Actions unit-test/lint/APK gate and the resulting APK is installed on an Android device. No APK path or passing build is claimed before that evidence exists.
 
 ## Build requirements
 
@@ -30,7 +36,7 @@ After installing the requirements:
 
 ```text
 gradle wrapper --gradle-version 8.9
-./gradlew testDebugUnitTest assembleDebug
+./gradlew testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
 ```
 
 The debug APK will then be produced by Gradle at `app/build/outputs/apk/debug/app-debug.apk` only after a successful build.
@@ -40,10 +46,12 @@ The debug APK will then be produced by Gradle at `app/build/outputs/apk/debug/ap
 The `Android build` workflow runs on pushes and pull requests targeting `main` or `master`, version tags matching `v*`, and manual dispatches. It installs JDK 17, Gradle 8.9, Android Platform 35 and Build Tools 35.0.0, then runs:
 
 ```text
-testDebugUnitTest assembleDebug
+testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
 ```
 
-Successful runs expose an installable `LedgerX-debug-<run number>` APK artifact. Test reports are uploaded even when the test/build step fails. The workflow deliberately creates a debug-signed development APK; production release signing must use protected GitHub secrets and a separately managed release key.
+Successful runs also boot an API 35 emulator, install the app, execute migration/offline/onboarding instrumentation tests, and expose an installable `LedgerX-debug-<run number>` APK plus SHA-256 artifact. Test reports are uploaded even when the test/build step fails. The workflow deliberately creates a debug-signed development APK; production release signing must use protected GitHub secrets and a separately managed release key.
+
+See [financial calculations](docs/FINANCIAL-CALCULATIONS.md), [security](docs/SECURITY.md), [backup recovery](docs/BACKUP-RECOVERY.md), and [release instructions](docs/RELEASE.md).
 
 ## Accounting conventions
 
