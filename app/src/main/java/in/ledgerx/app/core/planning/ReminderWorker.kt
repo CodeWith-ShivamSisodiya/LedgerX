@@ -56,13 +56,21 @@ class ReminderWorker(appContext: Context, params: WorkerParameters) : CoroutineW
     }
 
     private fun notify(key: String, title: String, text: String) {
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(text)
             .setAutoCancel(true)
             .build()
-        NotificationManagerCompat.from(applicationContext).notify(key.hashCode(), notification)
+        try {
+            NotificationManagerCompat.from(applicationContext).notify(key.hashCode(), notification)
+        } catch (_: SecurityException) {
+            // Permission can be revoked between the explicit check and notification delivery.
+        }
     }
 
     companion object { const val CHANNEL_ID = "financial-reminders" }

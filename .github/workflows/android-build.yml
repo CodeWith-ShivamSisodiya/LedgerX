@@ -72,7 +72,8 @@ jobs:
             app/build/test-results/
             app/build/outputs/androidTest-results/
             app/build/reports/androidTests/
-            app/build/reports/lint-results-debug.html
+            app/build/reports/lint-results-debug.*
+            app/build/intermediates/lint_intermediate_text_report/
             app/schemas/
           if-no-files-found: warn
           retention-days: 14
