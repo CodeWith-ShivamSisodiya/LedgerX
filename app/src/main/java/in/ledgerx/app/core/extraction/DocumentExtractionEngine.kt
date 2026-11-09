@@ -42,7 +42,7 @@ class SemanticLabelEngine : DocumentExtractionEngine {
             val pos=line.indexOf(label,ignoreCase=true)
             val rest=line.substring(pos+label.length).trimStart(' ',':','-','=', '₹')
             val found=pattern.find(rest)
-            if(found!=null) return ExtractedField(found.groups[1]?.value ?: found.value, line)
+            if(found!=null) return ExtractedField(if (found.groups.size > 1) found.groups[1]?.value ?: found.value else found.value, line)
             // For table-like layouts where value is on the following line
             if(rest.isBlank() && i+1<lines.size) {
                 val next=lines[i+1]
