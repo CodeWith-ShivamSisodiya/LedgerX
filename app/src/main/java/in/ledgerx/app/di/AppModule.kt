@@ -7,6 +7,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import com.ledgerx.app.core.database.WealthNotesDao
 import com.ledgerx.app.core.database.LedgerDao
 import com.ledgerx.app.core.database.LedgerXDatabase
 import com.ledgerx.app.core.database.PlanningDao
@@ -28,11 +29,12 @@ object AppModule {
         val factory = SupportOpenHelperFactory(keyManager.getOrCreatePassphrase())
         return Room.databaseBuilder(context, LedgerXDatabase::class.java, "ledgerx.db")
             .openHelperFactory(factory)
-            .addMigrations(DatabaseMigrations.MIGRATION_1_2, DatabaseMigrations.MIGRATION_2_3)
+            .addMigrations(DatabaseMigrations.MIGRATION_1_2, DatabaseMigrations.MIGRATION_2_3, DatabaseMigrations.MIGRATION_3_4)
             .fallbackToDestructiveMigrationOnDowngrade()
             .build()
     }
 
+    @Provides fun wealthNotesDao(database: LedgerXDatabase): WealthNotesDao = database.wealthNotesDao()
     @Provides fun ledgerDao(database: LedgerXDatabase): LedgerDao = database.ledgerDao()
     @Provides fun planningDao(database: LedgerXDatabase): PlanningDao = database.planningDao()
     @Provides fun extendedDao(database: LedgerXDatabase): ExtendedDao = database.extendedDao()

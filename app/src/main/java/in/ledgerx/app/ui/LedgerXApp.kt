@@ -111,11 +111,11 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 private enum class MainTab(val label: String, val icon: ImageVector) {
-    HOME("Home", Icons.Default.Home),
-    ACTIVITY("Activity", Icons.Default.ReceiptLong),
-    WEALTH("Wealth", Icons.Default.AccountBalanceWallet),
-    INSIGHTS("Insights", Icons.Default.Insights),
-    HEALTH("Health", Icons.Default.HealthAndSafety),
+    HOME("Overview", Icons.Default.Home),
+    ACTIVITY("Records", Icons.Default.ReceiptLong),
+    WEALTH("Assets", Icons.Default.AccountBalanceWallet),
+    INSIGHTS("Analytics", Icons.Default.Insights),
+    HEALTH("More", Icons.Default.HealthAndSafety),
 }
 
 @Composable
@@ -334,7 +334,7 @@ private fun MainShell(state: LedgerXUiState, viewModel: LedgerXViewModel, device
             }
         },
         floatingActionButton = {
-            if (tab == MainTab.HOME || tab == MainTab.ACTIVITY) {
+            if (tab == MainTab.ACTIVITY) {
                 ExtendedFloatingActionButton(
                     onClick = { showQuickEntry = true },
                     icon = { Icon(Icons.Default.Add, null) },
@@ -348,7 +348,7 @@ private fun MainShell(state: LedgerXUiState, viewModel: LedgerXViewModel, device
             MainTab.ACTIVITY -> ActivityScreen(viewModel.pagedTransactions, state.importBatches, state.receipts, padding, { importLauncher.launch(arrayOf("text/csv", "text/comma-separated-values", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text/plain")) }, { advancedEntry = "SPLIT" }, { advancedEntry = "CATEGORY" }, { advancedEntry = "INCOME_DETAIL" }, viewModel::setActivityQuery, viewModel::setActivityType, viewModel::reverseTransaction, { id -> receiptTargetId = id; receiptLauncher.launch(arrayOf("image/*", "application/pdf")) }, viewModel::removeReceipt, { advancedEntry = "TAG:$it" }, { editTarget = it }, viewModel::rollbackImport)
             MainTab.WEALTH -> WealthScreen(state, padding, onAdd = {
                 if (it in setOf("BILL", "LOAN", "GOAL")) planningEntry = it else advancedEntry = it
-            }, onPolicyDocument = { id -> policyDocumentTargetId=id; policyDocumentLauncher.launch(arrayOf("image/*","application/pdf")) }, onRemovePolicyDocument = viewModel::removePolicyDocument)
+            }, onPolicyDocument = { id -> policyDocumentTargetId=id; policyDocumentLauncher.launch(arrayOf("image/*","application/pdf")) }, onRemovePolicyDocument = viewModel::removePolicyDocument, onSaveNote = viewModel::saveWealthNote, onDeleteNote = viewModel::deleteWealthNote)
             MainTab.INSIGHTS -> InsightsScreen(state, padding)
             MainTab.HEALTH -> HealthScreen(
                 state, padding, deviceAuthenticationAvailable, viewModel::setAppLockEnabled,
@@ -410,84 +410,91 @@ private fun MainShell(state: LedgerXUiState, viewModel: LedgerXViewModel, device
 
 @Composable
 private fun HomeScreen(state: LedgerXUiState, padding: PaddingValues, onBillPaid: (String) -> Unit, onConfirmIncome: (String) -> Unit, onOpenWealth: () -> Unit, onOpenInsights: () -> Unit, onOpenActivity: () -> Unit, onOpenHealth: () -> Unit) {
+    val bank = state.accounts.filter { it.kind != "CREDIT_CARD" }.sumOf { it.balanceMinor }
+    val deposits = state.deposits.sumOf { it.principalMinor }
+    val debt = state.loans.sumOf { it.outstandingPrincipalMinor }
     LazyColumn(
         Modifier.fillMaxSize().padding(padding),
-        contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Column {
-                    Text("Good to see you", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Overview", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                }
-                Text("OFFLINE", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text("LEDGERX · PRIVATE WEALTH TRACKER", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Text("My wealth", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                Text("All your money and assets. No daily expense logging needed.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-        }
-        if (state.dashboardVisible("NET_WORTH")) item {
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                shape = RoundedCornerShape(24.dp),
-            ) {
-                Column(Modifier.padding(22.dp)) {
-                    Text("Total net worth", color = MaterialTheme.colorScheme.onPrimaryContainer)
-                    Text(
-                        Money(state.netWorthMinor).format(),
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text("From ${state.accounts.size} active account${if (state.accounts.size == 1) "" else "s"}")
-                    Text(state.lastUpdatedEpochMillis?.let { "Latest recorded data ${Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()}" } ?: "No dated activity or valuation yet",style=MaterialTheme.typography.bodySmall,color=MaterialTheme.colorScheme.onPrimaryContainer)
-                    OutlinedButton(onClick=onOpenWealth){Text("Open wealth details")}
-                }
-            }
-        }
-        if (state.dashboardVisible("NET_WORTH")) item { EmptyCard("This month's ledger net-worth movement",Money(state.monthlyLedgerNetWorthMovement).format()+" before manual market-valuation changes") }
-        if (state.dashboardVisible("CASHFLOW")) item {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MetricCard(if(state.incomeBreakdowns.isEmpty()) "Income" else "Gross income", state.monthlyIncomeMinor, Icons.Default.ArrowDownward, Modifier.weight(1f), Color(0xFF55E6B5))
-                MetricCard("Expenses", state.monthlyExpenseMinor, Icons.Default.ArrowUpward, Modifier.weight(1f), MaterialTheme.colorScheme.error)
-            }
-        }
-        if (state.dashboardVisible("CASHFLOW")) item {
-            val savings = state.monthlyTakeHomeMinor - state.monthlyExpenseMinor - state.confirmedMonthlyInvestmentMinor
-            val rate = LedgerMath.savingsRateBasisPoints(state.monthlyTakeHomeMinor, state.monthlyExpenseMinor)?.div(100.0)
-            EmptyCard("Monthly plan", "Investments ${Money(state.confirmedMonthlyInvestmentMinor).format()} • surplus ${Money(savings).format()} • savings rate ${rate?.let { "%.1f%%".format(it) } ?: "needs income"}")
-        }
-        if (state.incomeBreakdowns.isNotEmpty()) item { EmptyCard("Income detail","Gross confirmed ${Money(state.monthlyIncomeMinor).format()} • take-home cash ${Money(state.monthlyTakeHomeMinor).format()}. Withholding and deductions remain separately recorded.") }
-        if (state.dashboardVisible("CASHFLOW")) item { OutlinedButton(onClick=onOpenInsights){Text("Open forecasts and spending analysis")} }
-        if (state.dashboardVisible("HEALTH")) item { Card(shape=RoundedCornerShape(18.dp)){Column(Modifier.fillMaxWidth().padding(18.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){Text(state.financialHealth.score?.let{"Financial health $it/100"}?:"Financial health needs more data",fontWeight=FontWeight.SemiBold);Text("${state.financialHealth.completenessPercent}% of weighted inputs available",color=MaterialTheme.colorScheme.onSurfaceVariant);OutlinedButton(onClick=onOpenHealth){Text("Open score details")}}} }
-        if (state.dashboardVisible("CASHFLOW")) item {
-            val due = state.bills.filter { it.status == "DUE" }.sumOf { it.amountMinor }
-            val liquid = state.accounts.filter { it.kind != "CREDIT_CARD" }.sumOf { it.balanceMinor }
-            EmptyCard("Safe to spend", Money((liquid - due).coerceAtLeast(0)).format() + " after recorded due bills")
         }
         item {
-            Text("Accounts", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-        }
-        items(state.accounts, key = { it.id }) { AccountRow(it) }
-        if (state.dashboardVisible("UPCOMING") && state.bills.any{it.status=="DUE"}) {
-            item { Text("Upcoming obligations", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold) }
-            items(state.bills.filter{it.status=="DUE"}.take(3), key = { it.id }) { bill ->
-                Card(shape = RoundedCornerShape(18.dp)) { Row(Modifier.fillMaxWidth().padding(18.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(bill.name,fontWeight=FontWeight.SemiBold);Text("${Money(bill.amountMinor,bill.currencyCode).format()} • due ${LocalDate.ofEpochDay(bill.dueEpochDay)}",color=MaterialTheme.colorScheme.onSurfaceVariant)};OutlinedButton(onClick={onBillPaid(bill.id)}){Text("Pay")}} }
+            Card(
+                modifier = Modifier.fillMaxWidth().clickable(onClick = onOpenWealth),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            ) {
+                Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("ESTIMATED NET WORTH", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text(Money(state.netWorthMinor).format(), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text("Recorded asset values minus outstanding loans. Values change only when you update your records.", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.bodySmall)
+                    Text("Explore all holdings →", color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
-        if (state.dashboardVisible("UPCOMING") && state.pendingOccurrences.isNotEmpty()) {
-            item { Text("Income awaiting confirmation", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold) }
-            items(state.pendingOccurrences, key = { it.id }) { occurrence ->
-                val template = state.recurring.firstOrNull { it.id == occurrence.templateId }
-                Card(shape=RoundedCornerShape(18.dp)) { Row(Modifier.fillMaxWidth().padding(18.dp), horizontalArrangement=Arrangement.SpaceBetween, verticalAlignment=Alignment.CenterVertically) { Column(Modifier.weight(1f)) { Text(template?.merchant ?: "Scheduled income", fontWeight=FontWeight.SemiBold); Text("${template?.let { Money(it.amountMinor,it.currencyCode).format() } ?: "Amount unavailable"} • expected ${LocalDate.ofEpochDay(occurrence.dueEpochDay)}", color=MaterialTheme.colorScheme.onSurfaceVariant) }; OutlinedButton(onClick={onConfirmIncome(occurrence.id)}){Text("Received")} } }
+        item {
+            Text("Your portfolio", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        }
+        item {
+            Card(shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    SimpleMoneyRow("Bank & cash", bank)
+                    SimpleMoneyRow("Stocks & mutual funds", state.investmentValueMinor)
+                    SimpleMoneyRow("FD / RD deposits", deposits)
+                    SimpleMoneyRow("Retirement savings", state.retirementValueMinor)
+                    SimpleMoneyRow("Gold, property & other assets", state.physicalAssetValueMinor)
+                    HorizontalDivider()
+                    SimpleMoneyRow("Loans outstanding", debt, liability = true)
+                    OutlinedButton(onClick = onOpenWealth, modifier = Modifier.fillMaxWidth()) { Text("Manage holdings") }
+                }
             }
         }
-        if (state.dashboardVisible("GOALS") && state.goals.isNotEmpty()) {
-            item { Text("Goal progress", style=MaterialTheme.typography.titleLarge, fontWeight=FontWeight.SemiBold) }
-            items(state.goals.take(3),key={"home-${it.id}"}) { goal -> val funded=state.goalAllocations.filter{it.goalId==goal.id}.sumOf{it.allocatedMinor}; EmptyCard(goal.name,"${Money(funded).format()} of ${Money(goal.targetMinor).format()} • target ${LocalDate.ofEpochDay(goal.targetEpochDay)}") }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Card(Modifier.weight(1f), shape = RoundedCornerShape(20.dp)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Saved in FD / RD", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(Money(deposits).format(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Card(Modifier.weight(1f), shape = RoundedCornerShape(20.dp)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Outstanding debt", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(Money(debt).format(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
         }
-        item { Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically){Text("Recent activity", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp));OutlinedButton(onClick=onOpenActivity){Text("View all")}} }
-        if (state.transactions.isEmpty()) item { EmptyCard("No transactions yet", "Tap Add to record your first income or expense.") }
-        else items(state.transactions.take(5), key = { it.id }) { TransactionItem(it) }
+        item {
+            Card(shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Keep your wealth up to date", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("Record existing FDs, mutual funds, stocks, gold, property, bank balances, retirement savings and outstanding loans. Update valuations only when they change.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedButton(onClick = onOpenWealth) { Text("Add or update an asset") }
+                }
+            }
+        }
+        if (state.instruments.isEmpty() && state.deposits.isEmpty() && state.assets.isEmpty() && state.loans.isEmpty()) {
+            item { EmptyCard("Build your wealth inventory", "Start by adding an FD, an investment, gold/property or a loan from the Assets tab.") }
+        }
+        item {
+            Text("All values are offline records, not live market prices. Insurance coverage is protection, not automatically an asset.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun SimpleMoneyRow(label: String, amount: Long, liability: Boolean = false) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+        Text((if (liability) "−" else "") + Money(amount).format(), fontWeight = FontWeight.SemiBold, color = if (liability) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
     }
 }
 
@@ -581,14 +588,61 @@ private fun TransactionItem(row: TransactionRow, onReverse: ((String) -> Unit)? 
     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun WealthScreen(state: LedgerXUiState, padding: PaddingValues, onAdd: (String) -> Unit, onPolicyDocument: (String) -> Unit, onRemovePolicyDocument: (String) -> Unit) {
+private fun WealthScreen(state: LedgerXUiState, padding: PaddingValues, onAdd: (String) -> Unit, onPolicyDocument: (String) -> Unit, onRemovePolicyDocument: (String) -> Unit, onSaveNote: (String?, String, String, String, String) -> Unit, onDeleteNote: (String) -> Unit) {
+    var selectedNoteHolding by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var editingNote by remember { mutableStateOf<com.ledgerx.app.core.database.WealthNoteEntity?>(null) }
+    var showAdvancedTools by remember { mutableStateOf(false) }
     LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { Text("Wealth", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold) }
-        item { EmptyCard("Net worth", Money(state.netWorthMinor).format()) }
+        item { Text("My wealth", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold) }
+        item { Text("Savings, investments, assets and loans in one place", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), shape = RoundedCornerShape(26.dp)) {
+                Column(Modifier.fillMaxWidth().padding(22.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("TOTAL NET WORTH", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text(Money(state.netWorthMinor).format(), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text("Recorded assets minus outstanding loans", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+            }
+        }
+        item {
+            Card(shape = RoundedCornerShape(22.dp)) {
+                Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Wealth breakdown", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    SimpleMoneyRow("Bank and cash", state.accounts.filter { it.kind != "CREDIT_CARD" }.sumOf { it.balanceMinor })
+                    SimpleMoneyRow("Stocks and mutual funds", state.investmentValueMinor)
+                    SimpleMoneyRow("FD and RD", state.deposits.sumOf { it.principalMinor })
+                    SimpleMoneyRow("Retirement savings", state.retirementValueMinor)
+                    SimpleMoneyRow("Gold, property and assets", state.physicalAssetValueMinor)
+                    HorizontalDivider()
+                    SimpleMoneyRow("Outstanding loans", state.loans.sumOf { it.outstandingPrincipalMinor }, liability = true)
+                }
+            }
+        }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Planning", style = MaterialTheme.typography.titleLarge)
+                Text("Add your money & assets", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { onAdd("DEPOSIT") }, modifier = Modifier.weight(1f)) { Text("FD / RD") }
+                    OutlinedButton(onClick = { onAdd("INVESTMENT") }, modifier = Modifier.weight(1f)) { Text("Investment") }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { onAdd("ASSET") }, modifier = Modifier.weight(1f)) { Text("Gold / Asset") }
+                    OutlinedButton(onClick = { onAdd("LOAN") }, modifier = Modifier.weight(1f)) { Text("Loan") }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { onAdd("POLICY") }, modifier = Modifier.weight(1f)) { Text("Insurance") }
+                    OutlinedButton(onClick = { onAdd("ACCOUNT") }, modifier = Modifier.weight(1f)) { Text("Account") }
+                }
+                OutlinedButton(onClick = { showAdvancedTools = !showAdvancedTools }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (showAdvancedTools) "Hide advanced tools" else "More actions and advanced tools")
+                }
+            }
+        }
+        if (showAdvancedTools) item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Advanced tools", style = MaterialTheme.typography.titleLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = { onAdd("ACCOUNT") }) { Text("Account") }
                     OutlinedButton(onClick = { onAdd("BILL") }) { Text("Bill") }
@@ -630,6 +684,44 @@ private fun WealthScreen(state: LedgerXUiState, padding: PaddingValues, onAdd: (
                     OutlinedButton(onClick = { onAdd("RECONCILE") }, enabled = state.accounts.isNotEmpty()) { Text("Reconcile") }
                 }
                 if(state.archivedAccounts.isNotEmpty()) OutlinedButton(onClick={onAdd("RESTORE_ACCOUNT")}){Text("Restore archived account")}
+            }
+        }
+        item {
+            Text("Notes for your holdings", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        }
+        val holdings = buildList {
+            state.accounts.forEach { add(Triple("ACCOUNT", it.id, it.name)) }
+            state.instruments.forEach { add(Triple("INVESTMENT", it.id, it.name)) }
+            state.deposits.forEach { add(Triple("DEPOSIT", it.id, it.name)) }
+            state.assets.filter { !it.archived }.forEach { add(Triple("ASSET", it.id, it.name)) }
+            state.loans.forEach { add(Triple("LOAN", it.id, it.name)) }
+            state.policies.forEach { add(Triple("POLICY", it.id, it.name)) }
+        }
+        if (holdings.isEmpty()) {
+            item { Text("Add a holding to attach notes about renewal dates, paperwork or plans.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
+        items(holdings, key = { "note-holding-${it.first}-${it.second}" }) { (type, id, label) ->
+            val notes = state.wealthNotes.filter { it.holdingType == type && it.holdingId == id }
+            Card(shape = RoundedCornerShape(18.dp)) {
+                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(label, fontWeight = FontWeight.SemiBold)
+                            Text("${notes.size} note(s)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        OutlinedButton(onClick = { editingNote = null; selectedNoteHolding = type to id }) { Text("+ Note") }
+                    }
+                    notes.forEach { note ->
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(note.title, fontWeight = FontWeight.SemiBold)
+                                Text(note.body, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            OutlinedButton(onClick = { editingNote = note; selectedNoteHolding = type to id }) { Text("Edit") }
+                            OutlinedButton(onClick = { onDeleteNote(note.id) }) { Text("Delete") }
+                        }
+                    }
+                }
             }
         }
         if (state.instruments.isNotEmpty()) {
@@ -717,6 +809,24 @@ private fun WealthScreen(state: LedgerXUiState, padding: PaddingValues, onAdd: (
         items(state.accounts, key = { it.id }) { AccountRow(it) }
         item { Text("Market values remain manual and dated; LedgerX never presents an offline estimate as a live price.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
+    selectedNoteHolding?.let { (holdingType, holdingId) ->
+        var title by remember(editingNote?.id, holdingId) { mutableStateOf(editingNote?.title ?: "") }
+        var body by remember(editingNote?.id, holdingId) { mutableStateOf(editingNote?.body ?: "") }
+        ModalBottomSheet(onDismissRequest = { selectedNoteHolding = null; editingNote = null }) {
+            Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(if (editingNote == null) "New wealth note" else "Edit wealth note", style = MaterialTheme.typography.titleLarge)
+                OutlinedTextField(title, { title = it.take(120) }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(body, { body = it.take(5000) }, label = { Text("Details") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
+                Button(onClick = {
+                    onSaveNote(editingNote?.id, holdingType, holdingId, title, body)
+                    selectedNoteHolding = null
+                    editingNote = null
+                }, enabled = title.isNotBlank() && body.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("Save note") }
+                Spacer(Modifier.height(14.dp))
+            }
+        }
+    }
+
 }
 
 @Composable

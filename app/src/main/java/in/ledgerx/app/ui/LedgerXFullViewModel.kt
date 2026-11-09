@@ -68,6 +68,7 @@ data class LedgerXUiState(
     val receipts: List<ReceiptAttachmentEntity> = emptyList(),
     val policyDocuments: List<PolicyDocumentEntity> = emptyList(),
     val notificationSchedules: List<NotificationScheduleEntity> = emptyList(),
+    val wealthNotes: List<WealthNoteEntity> = emptyList(),
 ) {
     val monthlyIncomeMinor get() = confirmedMonthlyIncomeMinor
     val monthlyExpenseMinor get() = confirmedMonthlyExpenseMinor
@@ -122,6 +123,7 @@ class LedgerXViewModel @Inject constructor(
     private val importer: ImportRepository, private val backups: BackupRepository, private val reports: ReportRepository,
     private val extended: ExtendedFinanceRepository,
     private val deletion: DataDeletionRepository,
+    private val wealthNotesDao: WealthNotesDao,
 ) : ViewModel() {
     val themeMode: StateFlow<String> = security.themeMode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "SYSTEM")
     val lastAccountId: StateFlow<String?> = security.lastAccountId.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -199,7 +201,8 @@ class LedgerXViewModel @Inject constructor(
             policyDocuments = p.extended.c.policyDocuments,
             notificationSchedules = p.aux.notifications,
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LedgerXUiState())
+    }.combine(wealthNotesDao.observeNotes()) { current, notes -> current.copy(wealthNotes = notes) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LedgerXUiState())
 
     init { viewModelScope.launch { ledger.initialize(); extended.ensureProfile(); planning.ensureOfficialTaxRules(); recurringProcessor.processDue() } }
     fun createAccount(name: String, kind: String, opening: String) = action("Account created") { security.setLastAccountId(ledger.createAccount(name, kind, Money.parseMajor(opening.ifBlank { "0" }))) }
@@ -296,6 +299,13 @@ class LedgerXViewModel @Inject constructor(
     fun exportTransactions(uri: Uri) = action("Transaction report exported") { reports.exportTransactions(uri) }
     fun exportFinancialReport(uri: Uri) = action("Financial report exported") { reports.exportFinancialReport(uri) }
     fun exportCa(uri: Uri, year: String) = action("CA working report exported") { reports.exportCaReport(uri, year) }
+    fun saveWealthNote(id: String?, type: String, holdingId: String, title: String, body: String) = action("Wealth note saved") {
+        require(type in setOf("ACCOUNT", "INVESTMENT", "DEPOSIT", "ASSET", "LOAN", "POLICY")) { "Unsupported holding type" }
+        require(title.isNotBlank() && body.isNotBlank()) { "Enter a title and details" }
+        require(title.length <= 120 && body.length <= 5_000) { "Note is too long" }
+        wealthNotesDao.upsert(WealthNoteEntity(id ?: java.util.UUID.randomUUID().toString(), type, holdingId, title.trim(), body.trim(), System.currentTimeMillis()))
+    }
+    fun deleteWealthNote(id: String) = action("Wealth note deleted") { wealthNotesDao.delete(id) }
     fun clearMessage() { message.value = null; lastUndoTransactionId.value = null }
     fun setActivityQuery(value: String) { activityQuery.value = value }
     fun setActivityType(value: String) { activityType.value = value }

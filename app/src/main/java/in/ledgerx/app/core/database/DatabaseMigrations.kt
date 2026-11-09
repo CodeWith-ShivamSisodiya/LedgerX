@@ -39,6 +39,12 @@ object DatabaseMigrations {
         }
     }
 
+    val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS `wealth_notes` (`id` TEXT NOT NULL, `holdingType` TEXT NOT NULL, `holdingId` TEXT NOT NULL, `title` TEXT NOT NULL, `body` TEXT NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+        }
+    }
+
     private data class Table(val name: String, val columns: String, val pk: String = "id")
     private data class DbIndex(val table: String, val unique: Boolean, val columns: List<String>)
     private fun ix(table: String, vararg columns: String, unique: Boolean = false) = DbIndex(table, unique, columns.toList())
