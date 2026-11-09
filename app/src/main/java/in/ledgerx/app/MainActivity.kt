@@ -193,7 +193,7 @@ private fun WealthHome() {
     Scaffold(topBar={ TopAppBar(title={Text("WealthVault",fontWeight=FontWeight.Bold)},actions={
         TextButton(onClick={draft=WealthAsset()}){Text("+ Add")}
     }) },floatingActionButton={
-        ExtendedFloatingActionButton(onClick={pick.launch("image/*")},text={Text("Scan asset")})
+        ExtendedFloatingActionButton(onClick={pick.launch("image/*")}) { Text("Scan asset") }
     }) { inset ->
         Column(Modifier.fillMaxSize().padding(inset).verticalScroll(rememberScrollState()).padding(18.dp),verticalArrangement=Arrangement.spacedBy(14.dp)) {
             Text("Your wealth, organized",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.SemiBold)
