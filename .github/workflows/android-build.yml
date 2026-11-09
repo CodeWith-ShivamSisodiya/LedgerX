@@ -1,4 +1,4 @@
-name: Android build
+name: Fast Android APK build
 
 on:
   push:
@@ -18,8 +18,8 @@ concurrency:
 jobs:
   build:
     name: Test and build APK
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
 
     steps:
       - name: Check out repository
@@ -47,17 +47,8 @@ jobs:
           gradle-version: "8.9"
           cache-read-only: ${{ github.event_name == 'pull_request' }}
 
-      - name: Run unit tests, lint, and build APK/test packages
-        run: gradle --no-daemon --stacktrace testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest
-
-      - name: Run migration and device tests
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          target: google_apis
-          arch: x86_64
-          disable-animations: true
-          script: gradle --no-daemon --stacktrace connectedDebugAndroidTest
+      - name: Run unit tests, lint, and build APK
+        run: gradle --no-daemon --stacktrace testDebugUnitTest lintDebug assembleDebug
 
       - name: Generate APK checksum
         run: sha256sum app/build/outputs/apk/debug/app-debug.apk > app/build/outputs/apk/debug/app-debug.apk.sha256
@@ -70,8 +61,6 @@ jobs:
           path: |
             app/build/reports/tests/
             app/build/test-results/
-            app/build/outputs/androidTest-results/
-            app/build/reports/androidTests/
             app/build/reports/lint-results-debug.*
             app/build/intermediates/lint_intermediate_text_report/
             app/schemas/

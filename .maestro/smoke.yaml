@@ -1,0 +1,5 @@
+appId: com.ledgerx.app
+---
+- launchApp:
+    clearState: true
+- takeScreenshot: ledgerx-launch
