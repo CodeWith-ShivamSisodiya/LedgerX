@@ -348,7 +348,7 @@ private fun MainShell(state: LedgerXUiState, viewModel: LedgerXViewModel, device
             MainTab.ACTIVITY -> ActivityScreen(viewModel.pagedTransactions, state.importBatches, state.receipts, padding, { importLauncher.launch(arrayOf("text/csv", "text/comma-separated-values", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text/plain")) }, { advancedEntry = "SPLIT" }, { advancedEntry = "CATEGORY" }, { advancedEntry = "INCOME_DETAIL" }, viewModel::setActivityQuery, viewModel::setActivityType, viewModel::reverseTransaction, { id -> receiptTargetId = id; receiptLauncher.launch(arrayOf("image/*", "application/pdf")) }, viewModel::removeReceipt, { advancedEntry = "TAG:$it" }, { editTarget = it }, viewModel::rollbackImport)
             MainTab.WEALTH -> WealthScreen(state, padding, onAdd = {
                 if (it in setOf("BILL", "LOAN", "GOAL")) planningEntry = it else advancedEntry = it
-            }, onPolicyDocument = { id -> policyDocumentTargetId=id; policyDocumentLauncher.launch(arrayOf("image/*","application/pdf")) }, onRemovePolicyDocument = viewModel::removePolicyDocument)
+            }, onPolicyDocument = { id -> policyDocumentTargetId=id; policyDocumentLauncher.launch(arrayOf("image/*","application/pdf")) }, onRemovePolicyDocument = viewModel::removePolicyDocument, onSaveNote = viewModel::saveWealthNote, onDeleteNote = viewModel::deleteWealthNote)
             MainTab.INSIGHTS -> InsightsScreen(state, padding)
             MainTab.HEALTH -> HealthScreen(
                 state, padding, deviceAuthenticationAvailable, viewModel::setAppLockEnabled,
@@ -589,7 +589,9 @@ private fun TransactionItem(row: TransactionRow, onReverse: ((String) -> Unit)? 
 }
 
 @Composable
-private fun WealthScreen(state: LedgerXUiState, padding: PaddingValues, onAdd: (String) -> Unit, onPolicyDocument: (String) -> Unit, onRemovePolicyDocument: (String) -> Unit) {
+private fun WealthScreen(state: LedgerXUiState, padding: PaddingValues, onAdd: (String) -> Unit, onPolicyDocument: (String) -> Unit, onRemovePolicyDocument: (String) -> Unit, onSaveNote: (String?, String, String, String, String) -> Unit, onDeleteNote: (String) -> Unit) {
+    var selectedNoteHolding by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var editingNote by remember { mutableStateOf<com.ledgerx.app.core.database.WealthNoteEntity?>(null) }
     var showAdvancedTools by remember { mutableStateOf(false) }
     LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item { Text("My wealth", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold) }
@@ -683,6 +685,44 @@ private fun WealthScreen(state: LedgerXUiState, padding: PaddingValues, onAdd: (
                 if(state.archivedAccounts.isNotEmpty()) OutlinedButton(onClick={onAdd("RESTORE_ACCOUNT")}){Text("Restore archived account")}
             }
         }
+        item {
+            Text("Notes for your holdings", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        }
+        val holdings = buildList {
+            state.accounts.forEach { add(Triple("ACCOUNT", it.id, it.name)) }
+            state.instruments.forEach { add(Triple("INVESTMENT", it.id, it.name)) }
+            state.deposits.forEach { add(Triple("DEPOSIT", it.id, it.name)) }
+            state.assets.filter { !it.archived }.forEach { add(Triple("ASSET", it.id, it.name)) }
+            state.loans.forEach { add(Triple("LOAN", it.id, it.name)) }
+            state.policies.forEach { add(Triple("POLICY", it.id, it.name)) }
+        }
+        if (holdings.isEmpty()) {
+            item { Text("Add a holding to attach notes about renewal dates, paperwork or plans.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
+        items(holdings, key = { "note-holding-${it.first}-${it.second}" }) { (type, id, label) ->
+            val notes = state.wealthNotes.filter { it.holdingType == type && it.holdingId == id }
+            Card(shape = RoundedCornerShape(18.dp)) {
+                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(label, fontWeight = FontWeight.SemiBold)
+                            Text("${notes.size} note(s)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        OutlinedButton(onClick = { editingNote = null; selectedNoteHolding = type to id }) { Text("+ Note") }
+                    }
+                    notes.forEach { note ->
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(note.title, fontWeight = FontWeight.SemiBold)
+                                Text(note.body, maxLines = 2, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            OutlinedButton(onClick = { editingNote = note; selectedNoteHolding = type to id }) { Text("Edit") }
+                            OutlinedButton(onClick = { onDeleteNote(note.id) }) { Text("Delete") }
+                        }
+                    }
+                }
+            }
+        }
         if (state.instruments.isNotEmpty()) {
             item { Text("Investments • ${Money(state.investmentValueMinor).format()}", style = MaterialTheme.typography.titleLarge) }
             items(state.instruments, key = { it.id }) { instrument ->
@@ -768,6 +808,24 @@ private fun WealthScreen(state: LedgerXUiState, padding: PaddingValues, onAdd: (
         items(state.accounts, key = { it.id }) { AccountRow(it) }
         item { Text("Market values remain manual and dated; LedgerX never presents an offline estimate as a live price.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
+    selectedNoteHolding?.let { (holdingType, holdingId) ->
+        var title by remember(editingNote?.id, holdingId) { mutableStateOf(editingNote?.title ?: "") }
+        var body by remember(editingNote?.id, holdingId) { mutableStateOf(editingNote?.body ?: "") }
+        ModalBottomSheet(onDismissRequest = { selectedNoteHolding = null; editingNote = null }) {
+            Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(if (editingNote == null) "New wealth note" else "Edit wealth note", style = MaterialTheme.typography.titleLarge)
+                OutlinedTextField(title, { title = it.take(120) }, label = { Text("Title") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(body, { body = it.take(5000) }, label = { Text("Details") }, modifier = Modifier.fillMaxWidth(), minLines = 3)
+                Button(onClick = {
+                    onSaveNote(editingNote?.id, holdingType, holdingId, title, body)
+                    selectedNoteHolding = null
+                    editingNote = null
+                }, enabled = title.isNotBlank() && body.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("Save note") }
+                Spacer(Modifier.height(14.dp))
+            }
+        }
+    }
+
 }
 
 @Composable
