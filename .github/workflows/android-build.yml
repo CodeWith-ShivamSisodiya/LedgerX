@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build:
     name: Test and build APK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
 
     steps:
@@ -53,11 +53,35 @@ jobs:
       - name: Run migration and device tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          # Use a known stable Android environment for instrumentation tests.
+          api-level: 34
           target: google_apis
           arch: x86_64
           disable-animations: true
-          script: gradle --no-daemon --stacktrace connectedDebugAndroidTest
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: |
+            adb wait-for-device
+            echo "Boot state: $(adb shell getprop sys.boot_completed)"
+            adb shell df -h /data /sdcard || true
+            adb shell ls -ld /sdcard/Android || true
+            adb logcat -c || true
+            set +e
+            gradle --no-daemon --stacktrace connectedDebugAndroidTest
+            test_exit_code=$?
+            adb logcat -d -v time > android-test-logcat.txt || true
+            echo "Android instrumentation crash excerpts:"
+            grep -E -A 35 'FATAL EXCEPTION|AndroidRuntime|INSTRUMENTATION_FAILED|Process crashed' android-test-logcat.txt || true
+            exit "$test_exit_code"
+
+      - name: Upload Android instrumentation crash logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ledgerx-android-logcat-${{ github.run_number }}
+          path: android-test-logcat.txt
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Generate APK checksum
         run: sha256sum app/build/outputs/apk/debug/app-debug.apk > app/build/outputs/apk/debug/app-debug.apk.sha256
