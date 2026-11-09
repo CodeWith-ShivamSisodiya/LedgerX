@@ -455,16 +455,16 @@ private fun HomeScreen(state: LedgerXUiState, padding: PaddingValues, onBillPaid
         }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                MetricCard("Invested", investments, Icons.Default.Insights, Modifier.weight(1f), MaterialTheme.colorScheme.primary)
-                MetricCard("Remaining", remainder, Icons.Default.AccountBalanceWallet, Modifier.weight(1f), if (remainder >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+                MetricCard("Recorded investing", investments, Icons.Default.Insights, Modifier.weight(1f), MaterialTheme.colorScheme.primary)
+                MetricCard("Estimated left", remainder, Icons.Default.AccountBalanceWallet, Modifier.weight(1f), if (remainder >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
             }
         }
         item {
             Card(shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Understand your monthly flow", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text("Income − recorded expenses − planned investments = remaining", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                    Text("Investments and transfers should not also be entered as everyday expenses, or the remaining figure will count them twice.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Recorded take-home − recorded expenses − recorded investing = estimated left", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    Text("This is a records-based estimate, not your current bank balance or a future-month forecast. Avoid logging transfers or investments again as ordinary expenses.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedButton(onClick = onOpenInsights) { Text("Explore spending insights") }
                 }
             }
