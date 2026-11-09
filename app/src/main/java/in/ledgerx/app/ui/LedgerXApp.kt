@@ -629,12 +629,56 @@ private fun TransactionItem(row: TransactionRow, onReverse: ((String) -> Unit)? 
 
 @Composable
 private fun WealthScreen(state: LedgerXUiState, padding: PaddingValues, onAdd: (String) -> Unit, onPolicyDocument: (String) -> Unit, onRemovePolicyDocument: (String) -> Unit) {
+    var showAdvancedTools by remember { mutableStateOf(false) }
     LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { Text("Wealth", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold) }
-        item { EmptyCard("Net worth", Money(state.netWorthMinor).format()) }
+        item { Text("My wealth", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold) }
+        item { Text("Savings, investments, assets and loans in one place", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), shape = RoundedCornerShape(26.dp)) {
+                Column(Modifier.fillMaxWidth().padding(22.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("TOTAL NET WORTH", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text(Money(state.netWorthMinor).format(), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text("Recorded assets minus outstanding loans", color = MaterialTheme.colorScheme.onPrimaryContainer)
+                }
+            }
+        }
+        item {
+            Card(shape = RoundedCornerShape(22.dp)) {
+                Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Wealth breakdown", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    SimpleMoneyRow("Bank and cash", state.accounts.filter { it.kind != "CREDIT_CARD" }.sumOf { it.balanceMinor })
+                    SimpleMoneyRow("Stocks and mutual funds", state.investmentValueMinor)
+                    SimpleMoneyRow("FD and RD", state.deposits.sumOf { it.principalMinor })
+                    SimpleMoneyRow("Retirement savings", state.retirementValueMinor)
+                    SimpleMoneyRow("Gold, property and assets", state.physicalAssetValueMinor)
+                    HorizontalDivider()
+                    SimpleMoneyRow("Outstanding loans", state.loans.sumOf { it.outstandingPrincipalMinor }, liability = true)
+                }
+            }
+        }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Planning", style = MaterialTheme.typography.titleLarge)
+                Text("Add your money & assets", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { onAdd("DEPOSIT") }, modifier = Modifier.weight(1f)) { Text("FD / RD") }
+                    OutlinedButton(onClick = { onAdd("INVESTMENT") }, modifier = Modifier.weight(1f)) { Text("Investment") }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { onAdd("ASSET") }, modifier = Modifier.weight(1f)) { Text("Gold / Asset") }
+                    OutlinedButton(onClick = { onAdd("LOAN") }, modifier = Modifier.weight(1f)) { Text("Loan") }
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { onAdd("POLICY") }, modifier = Modifier.weight(1f)) { Text("Insurance") }
+                    OutlinedButton(onClick = { onAdd("ACCOUNT") }, modifier = Modifier.weight(1f)) { Text("Account") }
+                }
+                OutlinedButton(onClick = { showAdvancedTools = !showAdvancedTools }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (showAdvancedTools) "Hide advanced tools" else "More actions and advanced tools")
+                }
+            }
+        }
+        if (showAdvancedTools) item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Advanced tools", style = MaterialTheme.typography.titleLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = { onAdd("ACCOUNT") }) { Text("Account") }
                     OutlinedButton(onClick = { onAdd("BILL") }) { Text("Bill") }
