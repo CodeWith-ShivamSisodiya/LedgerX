@@ -588,6 +588,7 @@ private fun TransactionItem(row: TransactionRow, onReverse: ((String) -> Unit)? 
     HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WealthScreen(state: LedgerXUiState, padding: PaddingValues, onAdd: (String) -> Unit, onPolicyDocument: (String) -> Unit, onRemovePolicyDocument: (String) -> Unit, onSaveNote: (String?, String, String, String, String) -> Unit, onDeleteNote: (String) -> Unit) {
     var selectedNoteHolding by remember { mutableStateOf<Pair<String, String>?>(null) }
