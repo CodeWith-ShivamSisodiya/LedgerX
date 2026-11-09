@@ -28,8 +28,8 @@ interface DocumentExtractionEngine {
  */
 class SemanticLabelEngine : DocumentExtractionEngine {
     override val name = "semantic-label-v1"
-    private val money = Regex("""(?<![A-Za-z0-9])(?:INR|Rs\\.?|₹)?\\s*([0-9]{1,3}(?:,[0-9]{2,3})+(?:\\.[0-9]{1,2})?|[0-9]{1,12}(?:\\.[0-9]{1,2})?)(?![0-9])""",RegexOption.IGNORE_CASE)
-    private val date = Regex("""\\b(?:\\d{1,2}[-/.]\\d{1,2}[-/.]\\d{2,4}|\\d{4}[-/.]\\d{1,2}[-/.]\\d{1,2})\\b""")
+    private val money = Regex("""(?<![A-Za-z0-9])(?:INR|Rs\.?|₹)?\s*([0-9]{1,3}(?:,[0-9]{2,3})+(?:\.[0-9]{1,2})?|[0-9]{1,12}(?:\.[0-9]{1,2})?)(?![0-9])""",RegexOption.IGNORE_CASE)
+    private val date = Regex("""\b(?:\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{4}[-/.]\d{1,2}[-/.]\d{1,2})\b""")
     private val banks = listOf("HDFC BANK","ICICI BANK","STATE BANK OF INDIA","SBI","AXIS BANK","KOTAK","CANARA BANK","BANK OF BARODA","IDFC FIRST","PUNJAB NATIONAL BANK","PNB")
     private val principalLabels = listOf("deposit amount","amount invested","principal amount","initial deposit","original principal","amount deposited","investment amount","booking amount","principal","deposit value")
     private val maturityLabels = listOf("maturity proceeds","maturity amount","maturity value","redemption value","redemption proceeds","payable on maturity","amount on maturity")
@@ -67,8 +67,8 @@ class SemanticLabelEngine : DocumentExtractionEngine {
         }
         val bankLine=lines.firstOrNull { line -> banks.any { line.contains(it,true) } }
         val institution=bankLine?.let { line -> ExtractedField(banks.first { line.contains(it,true) },line) }
-        val ratePattern=Regex("""(?i)\\b(\\d{1,2}(?:\\.\\d{1,3})?)\\s*%?""")
-        val referencePattern=Regex("""(?i)(?:no\\.?|number|id|#)\\s*[:#-]?\\s*([A-Z0-9X*\\-]{4,})""")
+        val ratePattern=Regex("""(?i)\b(\d{1,2}(?:\.\d{1,3})?)\s*%?""")
+        val referencePattern=Regex("""(?i)(?:no\.?|number|id|#)\s*[:#-]?\s*([A-Z0-9X*\-]{4,})""")
         return ExtractionResult(
             category=category,institution=institution,
             principal=field(lines,principalLabels,money)?.let { it.copy(value=it.value.replace(",","")) },
