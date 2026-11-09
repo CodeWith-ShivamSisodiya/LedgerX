@@ -106,6 +106,38 @@ private object WealthRules {
     }
 }
 
+
+private object SecureWealthStore {
+    private const val alias = "wealthvault_aes_v1"
+    private fun key(): javax.crypto.SecretKey {
+        val store=java.security.KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+        (store.getKey(alias,null) as? javax.crypto.SecretKey)?.let { return it }
+        val generator=javax.crypto.KeyGenerator.getInstance("AES","AndroidKeyStore")
+        generator.init(android.security.keystore.KeyGenParameterSpec.Builder(alias,
+            android.security.keystore.KeyProperties.PURPOSE_ENCRYPT or android.security.keystore.KeyProperties.PURPOSE_DECRYPT)
+            .setBlockModes(android.security.keystore.KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(android.security.keystore.KeyProperties.ENCRYPTION_PADDING_NONE)
+            .setKeySize(256).build())
+        return generator.generateKey()
+    }
+    fun read(context:android.content.Context):String {
+        val encoded=context.getSharedPreferences("wealth_mvp",0).getString("assets_encrypted",null) ?: return "[]"
+        return runCatching {
+            val data=android.util.Base64.decode(encoded,android.util.Base64.NO_WRAP)
+            val cipher=javax.crypto.Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(javax.crypto.Cipher.DECRYPT_MODE,key(),javax.crypto.spec.GCMParameterSpec(128,data.copyOfRange(0,12)))
+            String(cipher.doFinal(data.copyOfRange(12,data.size)),Charsets.UTF_8)
+        }.getOrDefault("[]")
+    }
+    fun write(context:android.content.Context,content:String) {
+        val cipher=javax.crypto.Cipher.getInstance("AES/GCM/NoPadding")
+        cipher.init(javax.crypto.Cipher.ENCRYPT_MODE,key())
+        val bytes=cipher.iv+cipher.doFinal(content.toByteArray(Charsets.UTF_8))
+        val encoded=android.util.Base64.encodeToString(bytes,android.util.Base64.NO_WRAP)
+        context.getSharedPreferences("wealth_mvp",0).edit().putString("assets_encrypted",encoded).apply()
+    }
+}
+
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -122,16 +154,15 @@ class MainActivity : FragmentActivity() {
 @Composable
 private fun WealthHome() {
     val context=LocalContext.current
-    val prefs=remember { context.getSharedPreferences("wealth_mvp",android.content.Context.MODE_PRIVATE) }
     val assets=remember {
         mutableStateListOf<WealthAsset>().apply {
             runCatching {
-                val array=JSONArray(prefs.getString("assets","[]"))
+                val array=JSONArray(SecureWealthStore.read(context))
                 repeat(array.length()){ add(WealthAsset.from(array.getJSONObject(it))) }
             }
         }
     }
-    fun save() { prefs.edit().putString("assets", JSONArray().apply { assets.forEach { put(it.json()) } }.toString()).apply() }
+    fun save() { SecureWealthStore.write(context, JSONArray().apply { assets.forEach { put(it.json()) } }.toString()) }
     var draft by remember { mutableStateOf<WealthAsset?>(null) }
     var expanded by remember { mutableStateOf(false) }
     var scanning by remember { mutableStateOf(false) }
