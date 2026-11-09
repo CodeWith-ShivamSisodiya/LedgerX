@@ -21,7 +21,7 @@
 - [x] Simple asset shortcuts and advanced tools collapsed in Wealth.
 - [ ] Portfolio detail cards: account balance, FD/RD principal and maturity, stocks/MF quantity/cost/latest manual valuation, retirement, gold/property, and loan outstanding.
 - [ ] Add or update an entire holding through a short guided flow rather than a wall of forms.
-- [ ] General-purpose **notes per holding** (title, text, timestamp) with local encryption, editable history; do not misuse valuation assumptions for unrelated notes.
+- [x] General-purpose **notes per holding** (title, text, updated timestamp), encrypted in the existing SQLCipher Room database, with create/edit/delete. Audit/history of prior note revisions remains future work.
 - [ ] Asset and portfolio attachments (policy, receipts/certificates); keep encrypted storage and easy restore.
 - [ ] Portfolio groups and filters: bank/deposit, market investments, metals/property, retirement, loans and protection.
 - [ ] Loan-specific views: outstanding vs original debt, optional linked asset, paid-off status.
