@@ -54,12 +54,14 @@ import androidx.room.RoomDatabase
         PolicyDocumentEntity::class,
         PlanningAssumptionEntity::class,
         IncomeBreakdownEntity::class,
+        WealthNoteEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class LedgerXDatabase : RoomDatabase() {
     abstract fun ledgerDao(): LedgerDao
     abstract fun planningDao(): PlanningDao
+    abstract fun wealthNotesDao(): WealthNotesDao
     abstract fun extendedDao(): ExtendedDao
 }
