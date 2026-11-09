@@ -175,7 +175,18 @@ private fun WealthHome() {
         recognizer.process(image).addOnSuccessListener {
             scanning=false
             if(it.text.isBlank()) error="No readable text found. Try a clearer image or add manually."
-            else draft=WealthRules.extract(it.text)
+            else {
+                val extracted=com.ledgerx.app.core.extraction.SemanticLabelEngine().extract(it.text)
+                draft=WealthAsset(category=extracted.category,
+                    institution=extracted.institution?.value.orEmpty(),
+                    reference=extracted.reference?.value.orEmpty(),
+                    principal=extracted.principal?.value.orEmpty(),
+                    currentValue=extracted.maturityAmount?.value.orEmpty(),
+                    rate=extracted.rate?.value.orEmpty(),
+                    opened=extracted.openingDate?.value.orEmpty(),
+                    maturity=extracted.maturityDate?.value.orEmpty(),
+                    notes="Review OCR fields against the source document before saving.")
+            }
         }.addOnFailureListener {
             scanning=false;error="OCR could not read this image. Try another picture or add manually."
         }
