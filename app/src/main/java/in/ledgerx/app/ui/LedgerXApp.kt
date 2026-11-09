@@ -111,11 +111,11 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 private enum class MainTab(val label: String, val icon: ImageVector) {
-    HOME("Home", Icons.Default.Home),
-    ACTIVITY("Activity", Icons.Default.ReceiptLong),
-    WEALTH("Wealth", Icons.Default.AccountBalanceWallet),
-    INSIGHTS("Insights", Icons.Default.Insights),
-    HEALTH("Health", Icons.Default.HealthAndSafety),
+    HOME("Overview", Icons.Default.Home),
+    ACTIVITY("Records", Icons.Default.ReceiptLong),
+    WEALTH("Assets", Icons.Default.AccountBalanceWallet),
+    INSIGHTS("Analytics", Icons.Default.Insights),
+    HEALTH("More", Icons.Default.HealthAndSafety),
 }
 
 @Composable
@@ -334,7 +334,7 @@ private fun MainShell(state: LedgerXUiState, viewModel: LedgerXViewModel, device
             }
         },
         floatingActionButton = {
-            if (tab == MainTab.HOME || tab == MainTab.ACTIVITY) {
+            if (tab == MainTab.ACTIVITY) {
                 ExtendedFloatingActionButton(
                     onClick = { showQuickEntry = true },
                     icon = { Icon(Icons.Default.Add, null) },
@@ -410,21 +410,19 @@ private fun MainShell(state: LedgerXUiState, viewModel: LedgerXViewModel, device
 
 @Composable
 private fun HomeScreen(state: LedgerXUiState, padding: PaddingValues, onBillPaid: (String) -> Unit, onConfirmIncome: (String) -> Unit, onOpenWealth: () -> Unit, onOpenInsights: () -> Unit, onOpenActivity: () -> Unit, onOpenHealth: () -> Unit) {
-    val income = state.monthlyTakeHomeMinor
-    val expenses = state.monthlyExpenseMinor
-    val investments = state.confirmedMonthlyInvestmentMinor
-    // These figures reflect recorded activity and plans, never illustrative demo balances.
-    val remainder = income - expenses - investments
+    val bank = state.accounts.filter { it.kind != "CREDIT_CARD" }.sumOf { it.balanceMinor }
+    val deposits = state.deposits.sumOf { it.principalMinor }
+    val debt = state.loans.sumOf { it.outstandingPrincipalMinor }
     LazyColumn(
         Modifier.fillMaxSize().padding(padding),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("MY MONEY", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                Text("Your money, at a glance", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                Text("Spending, saving and wealth in one place.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text("LEDGERX · PRIVATE WEALTH TRACKER", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Text("My wealth", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+                Text("All your money and assets. No daily expense logging needed.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         item {
@@ -434,97 +432,60 @@ private fun HomeScreen(state: LedgerXUiState, padding: PaddingValues, onBillPaid
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
             ) {
                 Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("YOUR NET WORTH", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text("ESTIMATED NET WORTH", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
                     Text(Money(state.netWorthMinor).format(), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                    Text("Everything you own, minus outstanding loans", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                    Text("See wealth breakdown  →", fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text("Recorded asset values minus outstanding loans. Values change only when you update your records.", color = MaterialTheme.colorScheme.onPrimaryContainer, style = MaterialTheme.typography.bodySmall)
+                    Text("Explore all holdings →", color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("This month", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text(LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM yyyy")), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
+            Text("Your portfolio", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        }
+        item {
+            Card(shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    SimpleMoneyRow("Bank & cash", bank)
+                    SimpleMoneyRow("Stocks & mutual funds", state.investmentValueMinor)
+                    SimpleMoneyRow("FD / RD deposits", deposits)
+                    SimpleMoneyRow("Retirement savings", state.retirementValueMinor)
+                    SimpleMoneyRow("Gold, property & other assets", state.physicalAssetValueMinor)
+                    HorizontalDivider()
+                    SimpleMoneyRow("Loans outstanding", debt, liability = true)
+                    OutlinedButton(onClick = onOpenWealth, modifier = Modifier.fillMaxWidth()) { Text("Manage holdings") }
+                }
             }
         }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                MetricCard("Income", income, Icons.Default.ArrowDownward, Modifier.weight(1f), MaterialTheme.colorScheme.primary)
-                MetricCard("Expenses", expenses, Icons.Default.ArrowUpward, Modifier.weight(1f), MaterialTheme.colorScheme.error)
-            }
-        }
-        item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                MetricCard("Recorded investing", investments, Icons.Default.Insights, Modifier.weight(1f), MaterialTheme.colorScheme.primary)
-                MetricCard("Estimated left", remainder, Icons.Default.AccountBalanceWallet, Modifier.weight(1f), if (remainder >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+                Card(Modifier.weight(1f), shape = RoundedCornerShape(20.dp)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Saved in FD / RD", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(Money(deposits).format(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Card(Modifier.weight(1f), shape = RoundedCornerShape(20.dp)) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Outstanding debt", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(Money(debt).format(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
         item {
             Card(shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Understand your monthly flow", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text("Recorded take-home − recorded expenses − recorded investing = estimated left", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                    Text("This is a records-based estimate, not your current bank balance or a future-month forecast. Avoid logging transfers or investments again as ordinary expenses.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    OutlinedButton(onClick = onOpenInsights) { Text("Explore spending insights") }
+                    Text("Keep your wealth up to date", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text("Record existing FDs, mutual funds, stocks, gold, property, bank balances, retirement savings and outstanding loans. Update valuations only when they change.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedButton(onClick = onOpenWealth) { Text("Add or update an asset") }
                 }
             }
+        }
+        if (state.instruments.isEmpty() && state.deposits.isEmpty() && state.assets.isEmpty() && state.loans.isEmpty()) {
+            item { EmptyCard("Build your wealth inventory", "Start by adding an FD, an investment, gold/property or a loan from the Assets tab.") }
         }
         item {
-            Text("What you own", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        }
-        item {
-            Card(shape = RoundedCornerShape(22.dp), modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    SimpleMoneyRow("Bank & cash", state.accounts.filter { it.kind != "CREDIT_CARD" }.sumOf { it.balanceMinor })
-                    SimpleMoneyRow("Investments", state.investmentValueMinor)
-                    SimpleMoneyRow("FDs & deposits", state.deposits.sumOf { it.principalMinor })
-                    SimpleMoneyRow("Retirement", state.retirementValueMinor)
-                    SimpleMoneyRow("Property, gold & assets", state.physicalAssetValueMinor)
-                    HorizontalDivider()
-                    SimpleMoneyRow("Outstanding loans", state.loans.sumOf { it.outstandingPrincipalMinor }, liability = true)
-                    OutlinedButton(onClick = onOpenWealth, modifier = Modifier.fillMaxWidth()) { Text("Manage wealth & assets") }
-                }
-            }
-        }
-        if (state.bills.any { it.status == "DUE" }) {
-            item { Text("Upcoming payments", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-            items(state.bills.filter { it.status == "DUE" }.take(3), key = { "due-${it.id}" }) { bill ->
-                Card(shape = RoundedCornerShape(18.dp)) {
-                    Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                        Column(Modifier.weight(1f)) {
-                            Text(bill.name, fontWeight = FontWeight.SemiBold)
-                            Text("${Money(bill.amountMinor, bill.currencyCode).format()} · Due ${LocalDate.ofEpochDay(bill.dueEpochDay)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        OutlinedButton(onClick = { onBillPaid(bill.id) }) { Text("Pay") }
-                    }
-                }
-            }
-        }
-        if (state.pendingOccurrences.isNotEmpty()) {
-            item { Text("Income to confirm", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-            items(state.pendingOccurrences.take(3), key = { "income-${it.id}" }) { occurrence ->
-                val template = state.recurring.firstOrNull { it.id == occurrence.templateId }
-                Card(shape = RoundedCornerShape(18.dp)) {
-                    Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                        Column(Modifier.weight(1f)) {
-                            Text(template?.merchant ?: "Scheduled income", fontWeight = FontWeight.SemiBold)
-                            Text("Expected ${LocalDate.ofEpochDay(occurrence.dueEpochDay)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        OutlinedButton(onClick = { onConfirmIncome(occurrence.id) }) { Text("Received") }
-                    }
-                }
-            }
-        }
-        item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Recent activity", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                OutlinedButton(onClick = onOpenActivity) { Text("See all") }
-            }
-        }
-        if (state.transactions.isEmpty()) {
-            item { EmptyCard("Start tracking", "Tap Add to log a transaction. Add existing assets from Wealth.") }
-        } else {
-            items(state.transactions.take(4), key = { "recent-${it.id}" }) { TransactionItem(it) }
+            Text("All values are offline records, not live market prices. Insurance coverage is protection, not automatically an asset.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
